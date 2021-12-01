@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.preprocessing import MinMaxScaler
 
 ## Fetch and Store the data
 #
@@ -13,17 +14,25 @@ def fetch_store ():
     return data
 
 
-## Split Data Function
+## Preprocessing of Data
 #
-# Function Description  : Splits data into 2 sets : Train Data, Test Data
+# Function Description  : Precprocesses the train and test data as per the crierion of the Neural Networks.
+#
+# Criterion             : Scale data to range [0, 1]
 #
 # Input Parameters      : 1. data (The data that is to be splitted)                             : data
 #                         2. percentage_train_data (The percentage of data used for training)   : percentage_train_data
 #
-# Output Parameters     : 1. Train Data (1st part of Data)                                      : train_data
-#                         2. Test Data (2nd part of Data)                                       : test_data
+# Output Parameters     : 1. Scaling                    : processed_train_data
+#                         2. Processed Data             : processed_data
+#                         3. Processed Train Data       : processed_train_data
+#                         4. Processed Test Data        : processed_test_data
 ##
-def split_data (data, percentage_train_data):
+def preprocessing_data (data, percentage_train_data):
+    # Scaling the data to the range [0, 1]
+    scaling = MinMaxScaler(feature_range=(0,1))
+    processed_data = scaling.fit_transform(np.array(data).reshape(-1,1))
+    
     # Gets the length of the data
     data_length = len(data)
 
@@ -31,52 +40,35 @@ def split_data (data, percentage_train_data):
     train_data_length = int (percentage_train_data*data_length)
 
     # Splits the data into 2 sets : Train data and Test data
-    train_data = data[:train_data_length]
-    test_data = data[train_data_length:]
+    processed_train_data = processed_data[:train_data_length]
+    processed_test_data = processed_data[train_data_length:]
+    
+    return scaling, processed_data, processed_train_data, processed_test_data
 
-    return train_data, test_data
 
-
-## Preprocessing of Data
+## Generate Sequence used by the LSTM
 #
-# Function Description  : Precprocesses the train and test data as per the crierion of the Neural Networks.
-#
-# Criterion             : Scale data to range [0, 1]
-#
-# Input Parameters      : 1. Train Data                 : train_data
-#                         2. Test Data                  : test_data
-#
-# Output Parameters     : 1. Processed Train Data       : processed_train_data
-#                         2. Processed Test Data        : processed_test_data
-#                         3. Scaling Factor used        : scaling_factor
-##
-def preprocessing_data (train_data, test_data):
-    # Finding maximum among the Train and Test Data
-    max_train_data = max(train_data)
-    max_test_data = max(test_data)
-
-    scaling_factor = max(max_train_data, max_test_data)
-
-    print (scaling_factor)    
-
-    # Scaling the data to the range [0, 1]
-    processed_train_data = float(train_data/scaling_factor)
-    processed_test_data = float(test_data/scaling_factor)
-
-    return processed_train_data, processed_test_data, scaling_factor
-
-
-## Reverting the Scaling
-#
-# Function Description  : Removes the scaling used during the preprocessing
+# Function Description  : Places the data in such a way that LSTM can train the model
 #
 # Input Parameters      : 1. data (Data to be scaled)   : data
-#                         2. Scaling Factor             : scaling_factor
+#                         2. Features used              : dependence_interval
 #
-# Output Parameters     : 1. Processed data             : scaled_data
+# Output Parameters     : Sequence Used by LSTM         : processed_inp_data, exp_data
 ##
-def invert_scaling (data, scaling_factor):
-    # Remove the scaling
-    scaled_data = data*scaling_factor
-
-    return scaled_data
+# convert an array of values into a dataset matrix
+def generate_sequence(data, dependence_interval):
+    
+    inp_data, exp_data = [], []
+    
+    for iter in range(len(data)-dependence_interval-1):
+        temp_array = data[iter:(iter+dependence_interval), 0]
+        inp_data.append(temp_array)
+        exp_data.append(data[iter + dependence_interval, 0])
+        
+    inp_arr = np.array(inp_data)
+    print (inp_arr.shape)
+    #print (dependence_interval)
+    processed_inp_data =inp_arr.reshape(inp_arr.shape[0],inp_arr.shape[1] , 1)
+    print(processed_inp_data.shape)
+    
+    return processed_inp_data, np.array(exp_data)
