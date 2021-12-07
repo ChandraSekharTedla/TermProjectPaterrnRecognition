@@ -82,10 +82,7 @@ def generate_sequence(data, dependence_interval):
         exp_data.append(data[iter + dependence_interval, 0])
         
     inp_arr = np.array(inp_data)
-#     print ("inp_arr shape : ", inp_arr.shape)
-#     print ("depe_interval : ", dependence_interval)
     processed_inp_data =inp_arr.reshape(inp_arr.shape[0],inp_arr.shape[1] , 1)
-#     print ("inp_arr shape : ", processed_inp_data.shape)
     
     return processed_inp_data, np.array(exp_data)
 
